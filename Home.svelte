@@ -8,24 +8,26 @@
     origin: "*",
     format: "json",
     action: "query",
-    prop: "extracts",
-    exchars: 250,
-    exintro: true,
-    explaintext: true,
-    generator: "search",
-    gsrlimit: 20
+    prop: "pageprops|pageimages|description",
+    generator: "prefixsearch",
+    gsrlimit: 4,
+    ppprop: "displaytitle",
+    piprop: "thumbnail",
+    pilimit: 6,
+    gpsnamespace: 0,
+    gpslimit: 6
   };
-  /*   const params = {
-            origin: "*",
-            format: "json",
-            action: "query",
-            prop: "extracts",
-            exchars: 250,
-            exintro: true,
-            explaintext: true,
-            generator: "search",
-            gsrlimit: 20
-          }; */
+  /*const params = {
+      origin: "*",
+      format: "json",
+      action: "query",
+      prop: "extracts",
+      exchars: 250,
+      exintro: true,
+      explaintext: true,
+      generator: "search",
+      gsrlimit: 20
+    };*/
 
   let searchResult = "";
   let error = "";
@@ -63,24 +65,23 @@
 
   const showResults = results => {
     results.forEach(result => {
-      searchResult += `
-                          <div class="results__item">
-                              <a href="https://en.wikipedia.org/?curid=${
-                                result.pageId
-                              }" target="_blank" class="card animated bounceInUp">
-                                  <h2 class="results__item__title">${
-                                    result.title
-                                  }</h2>
-                                  <p class="results__item__intro">${
-                                    result.intro
-                                  }</p>
-                              </a>
-                          </div>
-                      `;
+      searchResult += `<div class="results__item">
+                            <a href="https://en.wikipedia.org/?curid=${
+                              result.pageId
+                            }" target="_blank" class="card animated bounceInUp">
+                                <h2 class="results__item__title">${
+                                  result.title
+                                }</h2>
+                                <p class="results__item__intro">${
+                                  result.intro
+                                }</p>
+                            </a>
+                        </div>`;
     });
   };
 
   const gatherData = pages => {
+    console.table(pages);
     const results = Object.values(pages).map(page => ({
       pageId: page.pageid,
       title: page.title,
@@ -110,12 +111,31 @@
     }
   };
 
-  function getAutocomplete() {}
+  const getAutocomplete = async () => {
+    const userInput = input.value;
+
+    params.gpssearch = userInput;
+    clearPreviousResults();
+    //disableUi();
+
+    try {
+      const { data } = await axios.get(endpoint, { params });
+
+      if (data.error) throw new Error(data.error.info);
+      gatherData(data.query.pages);
+    } catch (error) {
+      showError(error);
+    } finally {
+      enableUi();
+    }
+  };
 
   function onInput(e) {
     let inptTxt = e.currentTarget.value;
-    if (inptTxt.length > 2) {
-      getAutocomplete();
+    if (inptTxt.length > 0) {
+      setTimeout(() => {
+        getAutocomplete();
+      }, 500);
     }
     if (e.key === "Enter") {
       getData();
@@ -235,7 +255,7 @@
       type="text"
       class="search-bar__input"
       placeholder="What do you want to know?"
-      on:keydown={onInput}
+      on:keyup={onInput}
       autofocus
       required
     />
