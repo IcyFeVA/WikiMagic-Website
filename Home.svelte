@@ -1,33 +1,17 @@
 <script>
   import { onMount } from "svelte";
 
-  const axios = require("axios").default;
+  import axios from "axios";
 
-  const endpoint = "https://en.wikipedia.org/w/api.php?";
-  const params = {
-    origin: "*",
-    format: "json",
-    action: "query",
-    prop: "pageprops|pageimages|description",
-    generator: "prefixsearch",
-    gsrlimit: 4,
-    ppprop: "displaytitle",
-    piprop: "thumbnail",
-    pilimit: 6,
-    gpsnamespace: 0,
-    gpslimit: 6
+  const options = {
+    method: "GET",
+    url: "https://data-imdb1.p.rapidapi.com/titles/search/title/",
+    params: { info: "mini_info", limit: "10", page: "1", titleType: "movie" },
+    headers: {
+      "X-RapidAPI-Host": "data-imdb1.p.rapidapi.com",
+      "X-RapidAPI-Key": "36c4bcc195msh0c3bf45a11ace6cp1ef288jsnf6e9d8b6d2c0"
+    }
   };
-  /*const params = {
-      origin: "*",
-      format: "json",
-      action: "query",
-      prop: "extracts",
-      exchars: 250,
-      exintro: true,
-      explaintext: true,
-      generator: "search",
-      gsrlimit: 20
-    };*/
 
   let searchResult = "";
   let error = "";
@@ -66,44 +50,51 @@
   const showResults = results => {
     results.forEach(result => {
       searchResult += `<div class="results__item">
-                            <a href="https://en.wikipedia.org/?curid=${
-                              result.pageId
-                            }" target="_blank" class="card animated bounceInUp">
-                                <h2 class="results__item__title">${
-                                  result.title
-                                }</h2>
-                                <p class="results__item__intro">${
-                                  result.intro
-                                }</p>
-                            </a>
-                        </div>`;
+                                                      <a href="https://en.wikipedia.org/?curid=${
+                                                        result.pageId
+                                                      }" target="_blank" class="card animated bounceInUp">
+                                                          <h2 class="results__item__title">${
+                                                            result.title
+                                                          }</h2>
+                                                          <p class="results__item__intro">${
+                                                            result.intro
+                                                          }</p>
+                                                      </a>
+                                                  </div>`;
     });
   };
 
   const gatherData = pages => {
-    console.table(pages);
-    const results = Object.values(pages).map(page => ({
-      pageId: page.pageid,
-      title: page.title,
-      intro: page.extract
-    }));
-
-    showResults(results);
+    // console.table(pages);
+    // const results = Object.values(pages).map(page => ({
+    //   pageId: page.pageid,
+    //   title: page.title,
+    //   intro: page.extract
+    // }));
+    // showResults(results);
   };
 
   const getData = async () => {
     const userInput = input.value;
     if (isInputEmpty(userInput)) return;
 
-    params.gsrsearch = userInput;
+    options.url += userInput;
+    console.log("url", options.url);
     clearPreviousResults();
     disableUi();
 
     try {
-      const { data } = await axios.get(endpoint, { params });
+      axios
+        .request(options)
+        .then(function(response) {
+          console.log(response.data);
+        })
+        .catch(function(error) {
+          throw new Error(data.error.info);
+          console.error(error);
+        });
 
-      if (data.error) throw new Error(data.error.info);
-      gatherData(data.query.pages);
+      gatherData(response.data);
     } catch (error) {
       showError(error);
     } finally {
@@ -132,11 +123,11 @@
 
   function onInput(e) {
     let inptTxt = e.currentTarget.value;
-    if (inptTxt.length > 0) {
-      setTimeout(() => {
-        getAutocomplete();
-      }, 500);
-    }
+    // if (inptTxt.length > 0) {
+    //   setTimeout(() => {
+    //     getAutocomplete();
+    //   }, 500);
+    // }
     if (e.key === "Enter") {
       getData();
     }
@@ -144,110 +135,10 @@
 </script>
 
 <style>
-  button {
-    background: #ff3e00;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 2px;
-  }
-
-  .header__image {
-    max-width: 300px;
-    width: 100%;
-  }
-
-  .header__title {
-    font-family: "Zilla Slab", serif;
-    font-weight: 500;
-    font-size: 2.5rem;
-  }
-
-  .header__search-bar {
-    display: flex;
-    justify-content: space-between;
-    width: 320px;
-    padding: 5px;
-    border: 1px solid #f4f4f4;
-    margin: 40px auto;
-    box-shadow: 0px 2px 4px #dfdfdf;
-  }
-
-  .header__search-bar:hover {
-    box-shadow: 0px 3px 5px #c0c0c0;
-  }
-
-  .search-bar__input {
-    font-size: 1rem;
-    width: 85%;
-    border: none;
-    padding: 0.5rem;
-    outline-color: #1c1b1b;
-  }
-
-  .search-bar__button {
-    padding: 0.75rem;
-    border: none;
-    outline-color: #1c1b1b;
-    background-color: #fcfcfc;
-    cursor: pointer;
-  }
-  .search-bar__input:disabled,
-  .search-bar__button:disabled {
-    cursor: not-allowed;
-  }
-
-  .results {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .results__items {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .results__error {
-    color: #ef0000;
-  }
-
-  .results__item {
-    background: #fff;
-    border-radius: 2px;
-    display: inline-block;
-    height: 275px;
-    margin: 1rem;
-    /* position: relative; */
-    width: 300px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    cursor: pointer;
-    overflow: hidden;
-  }
-  .results__item:hover {
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
-  }
-  .results__item__title {
-    font-family: "Zilla Slab", serif;
-    font-weight: 500;
-    margin: 20px;
-  }
-  .results__item__intro {
-    margin: 0 20px;
-    padding-bottom: 20px;
-  }
 </style>
 
 <header>
-  <img
-    src="https://upload.wikimedia.org/wikipedia/commons/d/de/Wikipedia-logo_%28inverse%29.png"
-    alt="Wikipedia Logo"
-    width="300"
-    class="header__image"
-  />
-  <h1 class="header__title">Wikipedia.org</h1>
+  <h1 class="header__title">imdb.com</h1>
   <div class="header__search-bar">
     <input
       id="input"

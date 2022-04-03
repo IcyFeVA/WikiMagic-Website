@@ -1,5 +1,4 @@
 <script>
-  import Button from "./Button.svelte";
   import Home from "./Home.svelte";
 </script>
 
@@ -12,5 +11,4 @@
 
 <main>
   <Home />
-	<Button />
 </main>
